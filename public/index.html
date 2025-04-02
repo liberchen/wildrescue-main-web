@@ -4,68 +4,99 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>荒野救援 - 首頁</title>
+    <!-- 引入 Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #2980b9;
+            --background-color: #f4f4f4;
+            --card-background: #fff;
+            --text-color: #333;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
         body {
-            font-family: "微軟正黑體", Arial, sans-serif;
-            margin: 20px;
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
             line-height: 1.6;
-            background-color: #f4f4f4;
         }
         .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 1rem;
         }
         header {
             text-align: center;
-            margin-bottom: 30px;
+            padding: 2rem 0;
+        }
+        header img {
+            max-width: 150px;
+            margin-bottom: 1rem;
         }
         header h1 {
-            font-size: 2.5em;
-            margin-bottom: 5px;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--primary-color);
         }
         header p {
-            font-size: 1.1em;
-            color: #555;
+            font-size: 1.2rem;
+            color: var(--secondary-color);
         }
-        .mission {
-            margin-bottom: 40px;
-            padding: 20px;
-            border: 1px solid #ddd;
+        .card {
+            background: var(--card-background);
             border-radius: 8px;
-            background-color: #fafafa;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
         }
-        .mission h2 {
-            margin-top: 0;
-            color: #2c3e50;
+        .card h2 {
+            margin-bottom: 1rem;
+            color: var(--primary-color);
         }
         .mission p {
-            margin: 10px 0;
+            margin-bottom: 1rem;
         }
-        .section {
-            margin-bottom: 40px;
-        }
-        .qr-container {
+        .flex {
             display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
             align-items: center;
-            gap: 20px;
-            margin-top: 10px;
         }
-        .qr-container img {
+        .flex img {
             width: 150px;
-            height: 150px;
-            border: 1px solid #ccc;
+            border-radius: 8px;
+            transition: transform 0.3s ease;
+        }
+        .flex img:hover {
+            transform: scale(1.05);
+        }
+        .flex .text {
+            flex: 1;
+            min-width: 200px;
+        }
+        .button {
+            display: inline-block;
+            padding: 0.6rem 1.2rem;
+            background: var(--secondary-color);
+            color: #fff;
             border-radius: 4px;
+            text-decoration: none;
+            transition: background 0.3s ease;
+        }
+        .button:hover {
+            background: var(--primary-color);
         }
         footer {
             text-align: center;
-            color: #888;
-            font-size: 0.9em;
+            padding: 2rem 0;
+            font-size: 0.9rem;
+            color: #777;
             border-top: 1px solid #ddd;
-            padding-top: 20px;
         }
     </style>
 </head>
@@ -73,75 +104,65 @@
 <div class="container">
     <!-- 頁首 -->
     <header>
-        <img src="https://www.wildrescue.tw/images/logo.png" alt="荒野救援 Logo" style="max-width: 200px;">
+        <img src="https://www.wildrescue.tw/images/logo.png" alt="荒野救援 Logo">
         <h1>荒野救援</h1>
-        <p>打造一個共享戶外越野與救援資訊的社群平台</p>
+        <p>共享戶外越野與救援資訊的社群平台</p>
     </header>
-
     <!-- 社團宗旨 -->
-    <section class="mission">
+    <div class="card mission">
         <h2>🌿 荒野救援社團宗旨 🚙💨</h2>
         <p><strong>1. 熱愛戶外越野活動</strong><br>
             我們是一個共享越野生活的社團，無論您是越野活動新手或是經驗豐富的老手，我們都誠摯歡迎您的加入！</p>
-
         <p><strong>2. 共享資源、相互照應</strong><br>
             我們並不要求每位成員具備專業救援能力，而是相信透過車友間共享資源、彼此協助，能應對大部分突發狀況。若遇到無法排解的問題，也能迅速聯繫鄰近的救援資源。</p>
-
         <p><strong>3. 大自然裡沒有地位高低，以車會友</strong><br>
             在這個社團中，不論社會身份與地位，「車」 是我們共通的語言！我們攜手共享戶外越野所帶來的美好過程，彼此交流、互相扶持。</p>
-
         <p><strong>4. 尊重與保護自然環境</strong><br>
             我們熱愛荒野，更承諾尊重與保護自然環境 🌎！我們倡導「無痕山林」原則，確保活動不對環境造成傷害，離開時恢復原貌，並帶走所有垃圾，這是每位車友應有的基本禮貌與責任。</p>
-
         <p><strong>5. 守護每一位車友</strong><br>
             在荒野中，我們彼此尊重、相互守護，共同營造安全、友善的越野共享環境 🛻✨。</p>
-
         <p><strong>6. 持以感恩之心</strong><br>
-            我們對於前來救援與協助的車友，懷抱深深地感激之情 ❤️！我們明白，他們的幫助並非義務，而是出於熱情與友誼。因此，我們將永遠珍惜這份支持與情誼，並以誠摯的心意回報。</p>
-    </section>
-
+            我們對於前來救援與協助的車友，懷抱深深的感激之情 ❤️！我們明白，他們的幫助並非義務，而是出於熱情與友誼。因此，我們將永遠珍惜這份支持與情誼，並以誠摯的心意回報。</p>
+    </div>
     <!-- Line 社群 -->
-    <section class="section">
+    <div class="card">
         <h2>Line 社群</h2>
-        <div class="qr-container">
+        <div class="flex">
             <a href="https://bit.ly/3WGeXt7" target="_blank">
                 <img src="https://www.wildrescue.tw/images/line-social-qr.png" alt="Line 社群 QR Code">
             </a>
-            <div>
+            <div class="text">
                 <p>加入我們的 Line 社群，立即獲得最新救援消息與活動資訊！</p>
-                <a href="https://bit.ly/3WGeXt7" target="_blank">點此連結加入</a>
+                <a class="button" href="https://bit.ly/3WGeXt7" target="_blank">點此連結加入</a>
             </div>
         </div>
-    </section>
-
+    </div>
     <!-- 官方帳號 -->
-    <section class="section">
+    <div class="card">
         <h2>官方帳號</h2>
-        <div class="qr-container">
+        <div class="flex">
             <a href="https://lin.ee/fd8ge5U" target="_blank">
                 <img src="https://www.wildrescue.tw/images/line-official-qr.png" alt="官方帳號 QR Code">
             </a>
-            <div>
+            <div class="text">
                 <p>追蹤我們的官方帳號，獲得更多最新資訊與專屬內容！</p>
-                <a href="https://lin.ee/fd8ge5U" target="_blank">點此連結追蹤</a>
+                <a class="button" href="https://lin.ee/fd8ge5U" target="_blank">點此連結追蹤</a>
             </div>
         </div>
-    </section>
-
+    </div>
     <!-- Discord 論壇 -->
-    <section class="section">
+    <div class="card">
         <h2>Discord 論壇</h2>
-        <div class="qr-container">
+        <div class="flex">
             <a href="https://discord.gg/wildrescue" target="_blank">
                 <img src="https://www.wildrescue.tw/images/discord-qr.png" alt="Discord 論壇 QR Code">
             </a>
-            <div>
+            <div class="text">
                 <p>加入我們的 Discord 論壇，與全球夥伴們即時交流救援經驗與知識！</p>
-                <a href="https://discord.gg/wildrescue" target="_blank">點此連結加入</a>
+                <a class="button" href="https://discord.gg/wildrescue" target="_blank">點此連結加入</a>
             </div>
         </div>
-    </section>
-
+    </div>
     <!-- 頁尾 -->
     <footer>
         <p>&copy; 2025 荒野救援. 保留所有權利.</p>
