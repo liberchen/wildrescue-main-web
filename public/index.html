@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>荒野救援 - 首頁</title>
+    <title>荒野救援 - 全台灣最大 | 共享戶外救援資訊</title>
     <!-- 引入 Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
@@ -31,6 +31,18 @@
             margin: 2rem auto;
             padding: 1rem;
         }
+        /* 兩欄式佈局 */
+        .content-wrapper {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+        .main-content {
+            flex: 1;
+        }
+        .sidebar {
+            width: 370px; /* 適應 widget 寬度 + 外距 */
+        }
         header {
             text-align: center;
             padding: 2rem 0;
@@ -55,7 +67,7 @@
             max-width: 800px;
             margin: 1rem auto 2rem;
             overflow: hidden;
-            padding-top: 56.25%; /* 16:9 aspect ratio */
+            padding-top: 56.25%; /* 16:9 解析度 */
         }
         .video-container iframe {
             position: absolute;
@@ -162,96 +174,133 @@
             border-top: 1px solid #ddd;
         }
         @media (max-width: 768px) {
-            .promotion-container {
+            .content-wrapper {
                 flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
             }
         }
     </style>
 </head>
 <body>
 <div class="container">
-    <!-- 頁首：Logo 與網站標題 -->
-    <header>
-        <img src="https://www.wildrescue.tw/images/logo.png" alt="荒野救援 Logo">
-        <h1>荒野救援</h1>
-        <p>全台灣最大共享戶外越野與救援資訊的社群平台</p>
-    </header>
-
-    <!-- 嵌入宣傳影片 -->
-    <div class="video-container">
-        <iframe src="https://www.youtube.com/embed/Va3xaWr7z_0" title="宣傳影片"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowfullscreen></iframe>
-    </div>
-
-    <!-- 推廣連結區塊：橫向並排 -->
-    <div class="card">
-        <div class="promotion-container">
-            <!-- Line 社群 -->
-            <div class="promotion">
-                <a href="https://bit.ly/3WGeXt7" target="_blank">
-                    <img src="https://www.wildrescue.tw/images/line-social-qr.png" alt="Line 社群 QR Code">
-                </a>
-                <h3>Line 社群</h3>
-                <p>在荒野受困，想要立即獲得救援嗎？加入我們，救援隨時待命！</p>
-                <a class="button" href="https://bit.ly/3WGeXt7" target="_blank">立即加入</a>
+    <!-- 兩欄式佈局 -->
+    <div class="content-wrapper">
+        <!-- 左側主要內容 -->
+        <div class="main-content">
+            <!-- 頁首：Logo 與網站標題 -->
+            <header>
+                <img src="https://www.wildrescue.tw/images/logo.png" alt="荒野救援 Logo">
+                <h1>荒野救援</h1>
+                <p>全台灣最大，共享戶外救援資訊的社群平台</p>
+            </header>
+            <!-- 嵌入宣傳影片 -->
+            <div class="video-container">
+                <iframe src="https://www.youtube.com/embed/Va3xaWr7z_0" title="宣傳影片"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen></iframe>
             </div>
-            <!-- 官方帳號 -->
-            <div class="promotion">
-                <a href="https://lin.ee/fd8ge5U" target="_blank">
-                    <img src="https://www.wildrescue.tw/images/line-official-qr.png" alt="官方帳號 QR Code">
-                </a>
-                <h3>官方帳號</h3>
-                <p>想與管理團隊保持聯繫？點此加入，獲取最新管理資訊！</p>
-                <a class="button" href="https://lin.ee/fd8ge5U" target="_blank">立即追蹤</a>
+            <!-- 推廣連結區塊：橫向並排 -->
+            <div class="card">
+                <div class="promotion-container">
+                    <!-- Line 社群 -->
+                    <div class="promotion">
+                        <a href="https://bit.ly/3WGeXt7" target="_blank">
+                            <img src="https://www.wildrescue.tw/images/line-social-qr.png" alt="Line 社群 QR Code">
+                        </a>
+                        <h3>Line 社群</h3>
+                        <p>在荒野受困，想要立即獲得救援嗎？</p>
+                        <a class="button" href="https://bit.ly/3WGeXt7" target="_blank">立即加入</a>
+                    </div>
+                    <!-- 官方帳號 -->
+                    <div class="promotion">
+                        <a href="https://lin.ee/fd8ge5U" target="_blank">
+                            <img src="https://www.wildrescue.tw/images/line-official-qr.png" alt="官方帳號 QR Code">
+                        </a>
+                        <h3>官方帳號</h3>
+                        <p>想與管理團隊保持聯繫？</p>
+                        <a class="button" href="https://lin.ee/fd8ge5U" target="_blank">立即追蹤</a>
+                    </div>
+                    <!-- Discord 論壇 -->
+                    <div class="promotion">
+                        <a href="https://discord.gg/wildrescue" target="_blank">
+                            <img src="https://www.wildrescue.tw/images/discord-qr.png" alt="Discord 論壇 QR Code">
+                        </a>
+                        <h3>Discord 論壇</h3>
+                        <p>熱愛改裝、交易、越野活動或聊各種話題？</p>
+                        <a class="button" href="https://discord.gg/wildrescue" target="_blank">立即進入</a>
+                    </div>
+                </div>
             </div>
-            <!-- Discord 論壇 -->
-            <div class="promotion">
-                <a href="https://discord.gg/wildrescue" target="_blank">
-                    <img src="https://www.wildrescue.tw/images/discord-qr.png" alt="Discord 論壇 QR Code">
-                </a>
-                <h3>Discord 論壇</h3>
-                <p>熱愛改裝、交易或參與越野活動？來這裡與同好暢聊最新話題！</p>
-                <a class="button" href="https://discord.gg/wildrescue" target="_blank">立即進入</a>
+            <!-- 社團宗旨區塊 -->
+            <div class="card mission">
+                <h2>🌿 荒野救援社團宗旨 🚙💨</h2>
+                <ul>
+                    <li>
+                        <h3>1. 熱愛戶外越野活動</h3>
+                        <p>我們是一個共享越野生活的社團，無論您是新手或經驗豐富的老手，我們都誠摯歡迎您的加入！</p>
+                    </li>
+                    <li>
+                        <h3>2. 共享資源、相互照應</h3>
+                        <p>我們相信透過共享資源與彼此協助，能應對大部分突發狀況。</p>
+                    </li>
+                    <li>
+                        <h3>3. 大自然裡沒有地位高低，以車會友</h3>
+                        <p>「車」是我們的共通語言，攜手共享越野的美好過程與經驗。</p>
+                    </li>
+                    <li>
+                        <h3>4. 尊重與保護自然環境</h3>
+                        <p>我們熱愛荒野，堅持「無痕山林」原則，確保活動不造成環境傷害。</p>
+                    </li>
+                    <li>
+                        <h3>5. 守護每一位車友</h3>
+                        <p>我們彼此尊重、守護，共同營造安全友善的越野共享環境。</p>
+                    </li>
+                    <li>
+                        <h3>6. 持以感恩之心</h3>
+                        <p>我們深知每份救援與協助的重要，並以誠摯心意回報這份支持與情誼。</p>
+                    </li>
+                </ul>
             </div>
         </div>
+        <!-- 右側側邊欄：Discord 資訊，使用 JSON API -->
+        <div class="sidebar">
+            <h2 style="text-align: center; color: var(--primary-color); margin-bottom: 1rem;">Discord 社群</h2>
+            <div id="discord-widget">載入中...</div>
+        </div>
     </div>
-
-    <!-- 社團宗旨區塊 -->
-    <div class="card mission">
-        <h2>🌿 荒野救援社團宗旨 🚙💨</h2>
-        <ul>
-            <li>
-                <h3>1. 熱愛戶外越野活動</h3>
-                <p>我們是一個共享越野生活的社團，無論您是新手或是經驗豐富的老手，我們都誠摯歡迎您的加入！</p>
-            </li>
-            <li>
-                <h3>2. 共享資源、相互照應</h3>
-                <p>我們不要求每位成員具備專業救援能力，而是相信透過共享資源與彼此協助，能應對大部分突發狀況。</p>
-            </li>
-            <li>
-                <h3>3. 大自然裡沒有地位高低，以車會友</h3>
-                <p>不論社會身份，「車」是我們的共通語言，攜手共享越野美好過程與經驗。</p>
-            </li>
-            <li>
-                <h3>4. 尊重與保護自然環境</h3>
-                <p>我們熱愛荒野，承諾尊重與保護自然環境，並秉持「無痕山林」原則，確保活動不造成傷害。</p>
-            </li>
-            <li>
-                <h3>5. 守護每一位車友</h3>
-                <p>在荒野中，我們彼此尊重、守護，共同營造安全與友善的越野共享環境。</p>
-            </li>
-            <li>
-                <h3>6. 持以感恩之心</h3>
-                <p>我們對所有救援與協助的夥伴懷抱感激，並以誠摯心意回報這份支持與情誼。</p>
-            </li>
-        </ul>
-    </div>
-
     <!-- 頁尾 -->
     <footer>
         <p>&copy; 2025 荒野救援. 保留所有權利.</p>
     </footer>
 </div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function(){
+        fetch("https://discord.com/api/guilds/1345522848101302293/widget.json")
+            .then(response => response.json())
+            .then(data => {
+                let widgetDiv = document.getElementById("discord-widget");
+                let html = `<h3>${data.name}</h3>`;
+                if(data.instant_invite){
+                    html += `<p>加入社群：<a href="${data.instant_invite}" target="_blank">${data.instant_invite}</a></p>`;
+                }
+                html += `<p>在線人數：${data.presence_count}</p>`;
+                if(data.channels && data.channels.length > 0){
+                    html += `<h4>頻道列表：</h4><ul>`;
+                    data.channels.forEach(channel => {
+                        html += `<li>${channel.name}</li>`;
+                    });
+                    html += `</ul>`;
+                }
+                widgetDiv.innerHTML = html;
+            })
+            .catch(error => {
+                console.error("Error loading Discord widget:", error);
+                document.getElementById("discord-widget").innerHTML = "無法載入 Discord 資訊";
+            });
+    });
+</script>
 </body>
 </html>
