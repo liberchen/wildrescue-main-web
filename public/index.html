@@ -48,6 +48,23 @@
             font-size: 1.3rem;
             color: var(--secondary-color);
         }
+        /* 宣傳影片容器 */
+        .video-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin: 1rem auto 2rem;
+            overflow: hidden;
+            padding-top: 56.25%; /* 16:9 aspect ratio */
+        }
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
         .card {
             background: var(--card-background);
             border-radius: 8px;
@@ -61,7 +78,7 @@
             border-bottom: 2px solid var(--secondary-color);
             padding-bottom: 0.5rem;
         }
-        /* 推廣連結區塊調整為橫向排列 */
+        /* 推廣連結區塊橫向排列 */
         .promotion-container {
             display: flex;
             gap: 1.5rem;
@@ -157,8 +174,15 @@
     <header>
         <img src="https://www.wildrescue.tw/images/logo.png" alt="荒野救援 Logo">
         <h1>荒野救援</h1>
-        <p>共享戶外越野與救援資訊的社群平台</p>
+        <p>全台灣最大共享戶外越野與救援資訊的社群平台</p>
     </header>
+
+    <!-- 嵌入宣傳影片 -->
+    <div class="video-container">
+        <iframe src="https://www.youtube.com/embed/Va3xaWr7z_0" title="宣傳影片"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen></iframe>
+    </div>
 
     <!-- 推廣連結區塊：橫向並排 -->
     <div class="card">
@@ -169,8 +193,8 @@
                     <img src="https://www.wildrescue.tw/images/line-social-qr.png" alt="Line 社群 QR Code">
                 </a>
                 <h3>Line 社群</h3>
-                <p>立即加入，獲取最新救援消息與活動資訊！</p>
-                <a class="button" href="https://bit.ly/3WGeXt7" target="_blank">加入社群</a>
+                <p>在荒野受困，想要立即獲得救援嗎？加入我們，救援隨時待命！</p>
+                <a class="button" href="https://bit.ly/3WGeXt7" target="_blank">立即加入</a>
             </div>
             <!-- 官方帳號 -->
             <div class="promotion">
@@ -178,8 +202,8 @@
                     <img src="https://www.wildrescue.tw/images/line-official-qr.png" alt="官方帳號 QR Code">
                 </a>
                 <h3>官方帳號</h3>
-                <p>追蹤以掌握更多專屬內容與第一手資訊！</p>
-                <a class="button" href="https://lin.ee/fd8ge5U" target="_blank">追蹤帳號</a>
+                <p>想與管理團隊保持聯繫？點此加入，獲取最新管理資訊！</p>
+                <a class="button" href="https://lin.ee/fd8ge5U" target="_blank">立即追蹤</a>
             </div>
             <!-- Discord 論壇 -->
             <div class="promotion">
@@ -187,13 +211,13 @@
                     <img src="https://www.wildrescue.tw/images/discord-qr.png" alt="Discord 論壇 QR Code">
                 </a>
                 <h3>Discord 論壇</h3>
-                <p>與全球夥伴即時交流救援經驗！</p>
-                <a class="button" href="https://discord.gg/wildrescue" target="_blank">進入論壇</a>
+                <p>熱愛改裝、交易或參與越野活動？來這裡與同好暢聊最新話題！</p>
+                <a class="button" href="https://discord.gg/wildrescue" target="_blank">立即進入</a>
             </div>
         </div>
     </div>
 
-    <!-- 社團宗旨區塊（置底，易讀性強） -->
+    <!-- 社團宗旨區塊 -->
     <div class="card mission">
         <h2>🌿 荒野救援社團宗旨 🚙💨</h2>
         <ul>
@@ -207,7 +231,7 @@
             </li>
             <li>
                 <h3>3. 大自然裡沒有地位高低，以車會友</h3>
-                <p>不論社會身份，「車」 是我們共通的語言，攜手共享越野的美好過程、交流與扶持。</p>
+                <p>不論社會身份，「車」是我們的共通語言，攜手共享越野美好過程與經驗。</p>
             </li>
             <li>
                 <h3>4. 尊重與保護自然環境</h3>
@@ -219,7 +243,7 @@
             </li>
             <li>
                 <h3>6. 持以感恩之心</h3>
-                <p>我們對於所有救援與協助的夥伴懷抱感激，將以誠摯心意回報這份支持與情誼。</p>
+                <p>我們對所有救援與協助的夥伴懷抱感激，並以誠摯心意回報這份支持與情誼。</p>
             </li>
         </ul>
     </div>

@@ -1,11 +1,10 @@
 {
   "name": "wildrescue-main-web",
   "version": "1.0.0",
-  "description": "荒野救援主網站",
+  "description": "荒野救援主網站與自動跳轉 App",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js"
   },
   "repository": {
     "type": "git",
