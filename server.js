@@ -29,8 +29,8 @@ app.use('/images', (req, res, next) => {
 app.use(express.static(path.join(__dirname, 'public')));
 
 // 其他路由設定，例如 redirect 或 r 路由
-// const rRoute = require('./routes/r');
-// app.use('/r', rRoute);
+const rRoute = require('./routes/r');
+app.use('/r', rRoute);
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
