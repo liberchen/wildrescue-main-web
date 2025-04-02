@@ -61,23 +61,41 @@
             border-bottom: 2px solid var(--secondary-color);
             padding-bottom: 0.5rem;
         }
-        .flex {
+        /* 推廣連結區塊調整為橫向排列 */
+        .promotion-container {
             display: flex;
+            gap: 1.5rem;
+            justify-content: space-between;
             flex-wrap: wrap;
-            gap: 2rem;
-            align-items: center;
         }
-        .flex img {
-            width: 150px;
+        .promotion {
+            flex: 1;
+            min-width: 250px;
+            background: var(--card-background);
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+            padding: 1rem;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+        .promotion:hover {
+            transform: translateY(-5px);
+        }
+        .promotion img {
+            width: 120px;
             border-radius: 8px;
             transition: transform 0.3s ease;
         }
-        .flex img:hover {
+        .promotion img:hover {
             transform: scale(1.05);
         }
-        .flex .text {
-            flex: 1;
-            min-width: 220px;
+        .promotion h3 {
+            margin: 1rem 0 0.5rem;
+            color: var(--primary-color);
+        }
+        .promotion p {
+            font-size: 1rem;
+            margin-bottom: 0.8rem;
         }
         .button {
             display: inline-block;
@@ -88,7 +106,6 @@
             text-decoration: none;
             font-weight: 500;
             transition: background 0.3s ease;
-            margin-top: 0.5rem;
         }
         .button:hover {
             background: var(--primary-color);
@@ -128,12 +145,8 @@
             border-top: 1px solid #ddd;
         }
         @media (max-width: 768px) {
-            .flex {
+            .promotion-container {
                 flex-direction: column;
-                text-align: center;
-            }
-            .flex img {
-                margin: 0 auto;
             }
         }
     </style>
@@ -147,45 +160,35 @@
         <p>共享戶外越野與救援資訊的社群平台</p>
     </header>
 
-    <!-- 推廣連結區塊（置頂） -->
+    <!-- 推廣連結區塊：橫向並排 -->
     <div class="card">
-        <div class="flex">
+        <div class="promotion-container">
             <!-- Line 社群 -->
             <div class="promotion">
                 <a href="https://bit.ly/3WGeXt7" target="_blank">
                     <img src="https://www.wildrescue.tw/images/line-social-qr.png" alt="Line 社群 QR Code">
                 </a>
-                <div class="text">
-                    <h2>Line 社群</h2>
-                    <p>立即加入我們的 Line 社群，獲取最新救援消息與活動資訊！</p>
-                    <a class="button" href="https://bit.ly/3WGeXt7" target="_blank">加入社群</a>
-                </div>
+                <h3>Line 社群</h3>
+                <p>立即加入，獲取最新救援消息與活動資訊！</p>
+                <a class="button" href="https://bit.ly/3WGeXt7" target="_blank">加入社群</a>
             </div>
-        </div>
-        <div class="flex" style="margin-top: 2rem;">
             <!-- 官方帳號 -->
             <div class="promotion">
                 <a href="https://lin.ee/fd8ge5U" target="_blank">
                     <img src="https://www.wildrescue.tw/images/line-official-qr.png" alt="官方帳號 QR Code">
                 </a>
-                <div class="text">
-                    <h2>官方帳號</h2>
-                    <p>追蹤官方帳號，掌握更多專屬內容與第一手資訊！</p>
-                    <a class="button" href="https://lin.ee/fd8ge5U" target="_blank">追蹤帳號</a>
-                </div>
+                <h3>官方帳號</h3>
+                <p>追蹤以掌握更多專屬內容與第一手資訊！</p>
+                <a class="button" href="https://lin.ee/fd8ge5U" target="_blank">追蹤帳號</a>
             </div>
-        </div>
-        <div class="flex" style="margin-top: 2rem;">
             <!-- Discord 論壇 -->
             <div class="promotion">
                 <a href="https://discord.gg/wildrescue" target="_blank">
                     <img src="https://www.wildrescue.tw/images/discord-qr.png" alt="Discord 論壇 QR Code">
                 </a>
-                <div class="text">
-                    <h2>Discord 論壇</h2>
-                    <p>加入 Discord 論壇，與全球夥伴即時交流救援經驗！</p>
-                    <a class="button" href="https://discord.gg/wildrescue" target="_blank">進入論壇</a>
-                </div>
+                <h3>Discord 論壇</h3>
+                <p>與全球夥伴即時交流救援經驗！</p>
+                <a class="button" href="https://discord.gg/wildrescue" target="_blank">進入論壇</a>
             </div>
         </div>
     </div>
