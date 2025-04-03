@@ -34,6 +34,19 @@ router.get('/', (req, res) => {
     // 取得使用者相關資訊並輸出到 log
     const uaString = req.headers['user-agent'] || 'Unknown';
     const ua = useragent.parse(uaString);
+
+    // 過濾解析後的 UA，若屬性為布林值則只保留 true 的部分
+    const filteredUA = {};
+    for (const [key, value] of Object.entries(ua)) {
+        if (typeof value === 'boolean') {
+            if (value) {
+                filteredUA[key] = value;
+            }
+        } else {
+            filteredUA[key] = value;
+        }
+    }
+
     const referrer = req.headers.referer || 'Direct/Unknown';
 
     let platform = "Unknown";
@@ -56,7 +69,7 @@ router.get('/', (req, res) => {
 
     console.log(`[DEBUG] Request from IP: ${ip} (${country})`);
     console.log(`[DEBUG] User-Agent: ${uaString}`);
-    console.log(`[DEBUG] Parsed UA: ${JSON.stringify(ua)}`);
+    console.log(`[DEBUG] Parsed UA: ${JSON.stringify(filteredUA)}`);
     console.log(`[DEBUG] Referrer: ${referrer}`);
     console.log(`[DEBUG] Inferred Platform: ${platform}`);
 
@@ -85,6 +98,7 @@ router.get('/', (req, res) => {
 
     console.log(`[DEBUG] Decrypted Payload: ${JSON.stringify(payload)}`);
 
+    // 回應頁面只包含基本的跳轉與 OG meta 資訊，不包含 debug 資訊
     res.send(`<!DOCTYPE html>
 <html lang="zh-TW">
 <head>

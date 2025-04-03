@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>加密連結產生器</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+      background-color: #f4f4f4;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 1rem;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 0.8rem;
+      margin: 0.5rem 0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+    button {
+      padding: 0.8rem 1.2rem;
+      background: #2980b9;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    button:hover {
+      background: #1f6391;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>加密連結產生器</h1>
+  <p>請輸入完整的連結和（可選）文章標題，系統將產生一個加密連結，利用 /r 路由自動轉址。</p>
+  <form id="generatorForm">
+    <label for="target">完整連結 (target):</label>
+    <input type="text" id="target" name="target" placeholder="例如：https://discord.com/channels/xxxx/xxxx" required>
+
+    <label for="title">文章標題 (選填):</label>
+    <input type="text" id="title" name="title" placeholder="例如：緊急救援通知">
+
+    <button type="submit">產生加密連結</button>
+  </form>
+  <label for="result">產生的連結:</label>
+  <textarea id="result" rows="3" readonly></textarea>
+  <button id="copyBtn">一鍵複製</button>
+</div>
+
+<script>
+  const form = document.getElementById("generatorForm");
+  const resultArea = document.getElementById("result");
+  const copyBtn = document.getElementById("copyBtn");
+
+  form.addEventListener("submit", async function(e) {
+    e.preventDefault();
+    const target = document.getElementById("target").value;
+    const title = document.getElementById("title").value;
+
+    const payload = { target, title };
+
+    try {
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if(data.error){
+        resultArea.value = "錯誤: " + data.error;
+      } else {
+        resultArea.value = data.url;
+      }
+    } catch (err) {
+      resultArea.value = "產生連結時出現錯誤: " + err;
+    }
+  });
+
+  copyBtn.addEventListener("click", function() {
+    resultArea.select();
+    document.execCommand("copy");
+    alert("已複製連結到剪貼簿！");
+  });
+</script>
+</body>
+</html>
