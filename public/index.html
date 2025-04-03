@@ -14,6 +14,8 @@
             --card-background: #fff;
             --text-color: #333;
             --accent-color: #e67e22;
+            --highlight-bg: #fff8e1;  /* 淡黃色背景突顯重點 */
+            --highlight-border: #ffc107;
         }
         * {
             box-sizing: border-box;
@@ -66,7 +68,7 @@
             border-bottom: 2px solid var(--secondary-color);
             padding-bottom: 0.5rem;
         }
-        /* 推廣連結區塊橫向排列 */
+        /* 推廣連結區塊 */
         .promotion-container {
             display: flex;
             gap: 1.5rem;
@@ -115,7 +117,7 @@
         .button:hover {
             background: var(--primary-color);
         }
-        /* 社團宗旨樣式調整 */
+        /* 社團宗旨區塊 */
         .mission ul {
             list-style: none;
             padding-left: 0;
@@ -141,6 +143,25 @@
         .mission li p {
             font-size: 1.1rem;
             line-height: 1.8;
+        }
+        /* 救援活動會報亮點區塊 */
+        .rescue-highlights {
+            background-color: var(--highlight-bg);
+            border: 2px solid var(--highlight-border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+        .rescue-highlights h2 {
+            color: var(--highlight-border);
+        }
+        .rescue-highlights ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        .rescue-highlights li {
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
         }
         footer {
             text-align: center;
@@ -201,6 +222,19 @@
                     <a class="button" href="https://discord.gg/wildrescue" target="_blank">立即進入</a>
                 </div>
             </div>
+        </div>
+        <!-- 新增：救援活動會報亮點區塊 -->
+        <div class="card rescue-highlights">
+            <h2>最新救援活動亮點</h2>
+            <p>2025 Q1 我們共處理了 <strong>21 件</strong>救援事件，參與人次超過 <strong>60</strong>！</p>
+            <ul>
+                <li><strong>3/27：</strong>重磅救援記錄：不幸離世的越野學長、眾多英雄隊友的奮勇救援。</li>
+                <li><strong>重複出動：</strong>@Jay、@野營狂阿勳 等成員多次參與，彰顯堅定團隊精神！</li>
+                <li><strong>全台覆蓋：</strong>救援遍及新北、台南、高雄等全台各區，跨越山區、沙灘、溫泉等多樣地形。</li>
+            </ul>
+            <p style="text-align: center;">
+                <a class="button" href="/rescue-stats.html" target="_blank">查看完整救援報告</a>
+            </p>
         </div>
         <!-- 社團宗旨區塊 -->
         <div class="card mission">
