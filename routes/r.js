@@ -31,12 +31,11 @@ function decrypt(text) {
 }
 
 router.get('/', (req, res) => {
-    // 新增 debug 資訊，取得使用者相關資訊
+    // 取得使用者相關資訊並輸出到 log
     const uaString = req.headers['user-agent'] || 'Unknown';
     const ua = useragent.parse(uaString);
     const referrer = req.headers.referer || 'Direct/Unknown';
 
-    // 根據 referer 判斷社群平台（僅作簡單判斷，實際可能需更複雜邏輯）
     let platform = "Unknown";
     if (referrer.toLowerCase().includes("line.me")) {
         platform = "Line";
@@ -48,7 +47,6 @@ router.get('/', (req, res) => {
         platform = "Twitter";
     }
 
-    // 取得用戶 IP (注意: 若部署在反向代理後，需確認 x-forwarded-for 是否正確)
     let ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'Unknown';
     if (ip.includes(',')) {
         ip = ip.split(',')[0].trim();
@@ -56,7 +54,6 @@ router.get('/', (req, res) => {
     const geo = geoip.lookup(ip) || {};
     const country = geo.country || "Unknown";
 
-    // 輸出 debug log
     console.log(`[DEBUG] Request from IP: ${ip} (${country})`);
     console.log(`[DEBUG] User-Agent: ${uaString}`);
     console.log(`[DEBUG] Parsed UA: ${JSON.stringify(ua)}`);
@@ -69,7 +66,6 @@ router.get('/', (req, res) => {
         return res.send('請提供 target 參數（經過加密且以 Base64 編碼後的內容），例如：?target=ENCRYPTED_PAYLOAD');
     }
 
-    // 解密 payload
     const decryptedPayload = decrypt(encryptedPayload);
     if (!decryptedPayload) {
         return res.send('無法解密 target 參數，請確認加密格式與金鑰正確。');
@@ -77,7 +73,6 @@ router.get('/', (req, res) => {
 
     let payload;
     try {
-        // 解析解密後的 JSON 字串，內容格式：{ target: "目標網址", title: "文章標題" }
         payload = JSON.parse(decryptedPayload);
     } catch (err) {
         return res.send('解密後的內容無法解析，請確認加密內容正確。');
@@ -88,7 +83,6 @@ router.get('/', (req, res) => {
     const ogDescription = "立即加入我們，獲得即時救援與豐富社群互動！";
     const ogImage = "https://www.wildrescue.tw/images/og-preview.png";
 
-    // 可以將 debug 資訊也寫入回應（或僅記錄在 server log 中），但注意不要暴露太多使用者資訊到前端
     console.log(`[DEBUG] Decrypted Payload: ${JSON.stringify(payload)}`);
 
     res.send(`<!DOCTYPE html>
@@ -116,14 +110,6 @@ router.get('/', (req, res) => {
 <body>
   <h1>${customTitle}</h1>
   <p>即將跳轉到目標頁面，如果沒有自動跳轉，請點<a href="${targetUrl}">這裡</a>。</p>
-  <!-- 以下為 debug 資訊，僅供開發使用，請視需要移除 -->
-  <hr>
-  <h3>Debug Info</h3>
-  <p><strong>IP:</strong> ${ip} (${country})</p>
-  <p><strong>User Agent:</strong> ${uaString}</p>
-  <p><strong>Parsed UA:</strong> ${JSON.stringify(ua)}</p>
-  <p><strong>Referrer:</strong> ${referrer}</p>
-  <p><strong>Inferred Platform:</strong> ${platform}</p>
 </body>
 </html>`);
 });
