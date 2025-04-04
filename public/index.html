@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>荒野救援 - 全台灣最大，共享戶外救援資訊的社群平台</title>
-    <!-- 引入 Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -14,7 +13,7 @@
             --card-background: #fff;
             --text-color: #333;
             --accent-color: #e67e22;
-            --highlight-bg: #fff8e1;  /* 淡黃色背景突顯重點 */
+            --highlight-bg: #fff8e1;  /* 淡黃色背景 */
             --highlight-border: #ffc107;
         }
         * {
@@ -30,54 +29,71 @@
         }
         .container {
             max-width: 1200px;
-            margin: 2rem auto;
+            margin: 1rem auto;
             padding: 1rem;
         }
-        header {
-            text-align: center;
-            padding: 2rem 0;
+        /* 兩欄式頂部區塊 */
+        .top-section {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            align-items: flex-start;
         }
-        header img {
+        .left-column, .right-column {
+            flex: 1;
+            min-width: 300px;
+        }
+        /* 左側：LOGO、標題、標語與救援活動亮點 */
+        .logo {
             max-width: 150px;
             margin-bottom: 1rem;
         }
-        header h1 {
+        .title {
             font-size: 2.8rem;
-            margin-bottom: 0.5rem;
             color: var(--primary-color);
+            margin-bottom: 0.3rem;
         }
-        header p {
+        .tagline {
             font-size: 1.3rem;
             color: var(--secondary-color);
+            margin-bottom: 1rem;
         }
-        /* 宣傳影片區塊 */
+        .rescue-highlights {
+            background-color: var(--highlight-bg);
+            border: 2px solid var(--highlight-border);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+        .rescue-highlights h2 {
+            font-size: 1.8rem;
+            color: var(--highlight-border);
+            margin-bottom: 0.5rem;
+        }
+        .rescue-highlights ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        .rescue-highlights li {
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+        /* 右側：影片與主要連結 */
         .video-container {
             text-align: center;
-            margin: 1rem auto 2rem;
-        }
-        .card {
-            background: var(--card-background);
-            border-radius: 8px;
-            box-shadow: 0 6px 10px rgba(0,0,0,0.1);
-            padding: 1.8rem;
-            margin-bottom: 2.5rem;
-        }
-        .card h2 {
             margin-bottom: 1rem;
-            color: var(--primary-color);
-            border-bottom: 2px solid var(--secondary-color);
-            padding-bottom: 0.5rem;
         }
-        /* 推廣連結區塊 */
-        .promotion-container {
+        .video-container iframe {
+            width: 560px;
+            height: 315px;
+            max-width: 100%;
+        }
+        .promotion-links {
             display: flex;
-            gap: 1.5rem;
-            justify-content: space-between;
-            flex-wrap: wrap;
+            flex-direction: column;
+            gap: 10px;
         }
         .promotion {
-            flex: 1;
-            min-width: 250px;
             background: var(--card-background);
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.08);
@@ -86,92 +102,47 @@
             transition: transform 0.3s ease;
         }
         .promotion:hover {
-            transform: translateY(-5px);
+            transform: translateY(-3px);
         }
         .promotion img {
-            width: 120px;
+            width: 100px;
+            margin-bottom: 0.5rem;
             border-radius: 8px;
-            transition: transform 0.3s ease;
-        }
-        .promotion img:hover {
-            transform: scale(1.05);
         }
         .promotion h3 {
-            margin: 1rem 0 0.5rem;
+            font-size: 1.2rem;
             color: var(--primary-color);
+            margin-bottom: 0.3rem;
         }
         .promotion p {
             font-size: 1rem;
-            margin-bottom: 0.8rem;
+            margin-bottom: 0.5rem;
         }
         .button {
             display: inline-block;
-            padding: 0.7rem 1.4rem;
+            padding: 0.5rem 1rem;
             background: var(--secondary-color);
             color: #fff;
             border-radius: 4px;
             text-decoration: none;
             font-weight: 500;
             transition: background 0.3s ease;
+            font-size: 0.9rem;
         }
         .button:hover {
             background: var(--primary-color);
         }
-        /* 社團宗旨區塊 */
-        .mission ul {
-            list-style: none;
-            padding-left: 0;
-        }
-        .mission li {
-            margin-bottom: 1.5rem;
-            padding-left: 2.5rem;
-            position: relative;
-        }
-        .mission li::before {
-            content: "✔";
-            position: absolute;
-            left: 0;
-            top: 0;
-            font-size: 1.5rem;
-            color: var(--accent-color);
-        }
-        .mission li h3 {
-            font-size: 1.4rem;
-            margin-bottom: 0.3rem;
-            color: var(--primary-color);
-        }
-        .mission li p {
-            font-size: 1.1rem;
-            line-height: 1.8;
-        }
-        /* 救援活動會報亮點區塊 */
-        .rescue-highlights {
-            background-color: var(--highlight-bg);
-            border: 2px solid var(--highlight-border);
-            border-radius: 8px;
-            padding: 1.5rem;
-            margin-bottom: 2.5rem;
-        }
-        .rescue-highlights h2 {
-            color: var(--highlight-border);
-        }
-        .rescue-highlights ul {
-            list-style: none;
-            padding-left: 0;
-        }
-        .rescue-highlights li {
-            margin-bottom: 1rem;
-            font-size: 1.1rem;
-        }
+        /* Footer */
         footer {
             text-align: center;
-            padding: 2rem 0;
+            padding: 1rem 0;
             font-size: 0.9rem;
             color: #777;
             border-top: 1px solid #ddd;
+            margin-top: 1rem;
         }
         @media (max-width: 768px) {
-            .promotion-container {
+            .top-section {
                 flex-direction: column;
             }
         }
@@ -179,92 +150,54 @@
 </head>
 <body>
 <div class="container">
-    <!-- 單欄式佈局 -->
-    <div class="main-content">
-        <!-- 頁首：Logo 與網站標題 -->
-        <header>
-            <img src="https://www.wildrescue.tw/images/logo.png" alt="荒野救援 Logo">
-            <h1>荒野救援</h1>
-            <p>全台灣最大，共享戶外救援資訊的社群平台</p>
-        </header>
-        <!-- 嵌入宣傳影片 -->
-        <div class="video-container">
-            <iframe width="560" height="315" src="https://www.youtube.com/embed/Va3xaWr7z_0?si=GTCb7yA2Ft6xZOwz" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+    <div class="top-section">
+        <!-- 左側：LOGO、標題、標語與救援活動亮點 -->
+        <div class="left-column">
+            <img class="logo" src="https://www.wildrescue.tw/images/logo.png" alt="荒野救援 Logo">
+            <div class="title">荒野救援</div>
+            <div class="tagline">全台灣最大，共享戶外救援資訊的社群平台</div>
+            <div class="rescue-highlights">
+                <h2>最新救援亮點</h2>
+                <ul>
+                    <li><strong>21 件</strong>救援事件，參與人次超過 <strong>60</strong>！</li>
+                    <li>3/27：重磅救援記錄與眾多英雄出動！</li>
+                    <li>重複出動成員：@Jay、@野營狂阿勳 等持續奮戰！</li>
+                    <li>全台覆蓋：跨越各種地形，實現即時救援！</li>
+                </ul>
+                <a class="button" href="/rescue-stats.html" target="_blank">查看完整報告</a>
+            </div>
         </div>
-        <!-- 推廣連結區塊：橫向並排 -->
-        <div class="card">
-            <div class="promotion-container">
-                <!-- Line 社群 -->
+        <!-- 右側：影片與主要連結 -->
+        <div class="right-column">
+            <div class="video-container">
+                <iframe width="560" height="315" src="https://www.youtube.com/embed/Va3xaWr7z_0?si=GTCb7yA2Ft6xZOwz" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+            </div>
+            <div class="promotion-links">
                 <div class="promotion">
                     <a href="https://bit.ly/3WGeXt7" target="_blank">
                         <img src="https://www.wildrescue.tw/images/line-social-qr.png" alt="Line 社群 QR Code">
                     </a>
                     <h3>Line 社群</h3>
-                    <p>在荒野受困，想要立即獲得救援嗎？</p>
+                    <p>在荒野受困？立即獲得救援！</p>
                     <a class="button" href="https://bit.ly/3WGeXt7" target="_blank">立即加入</a>
                 </div>
-                <!-- 官方帳號 -->
                 <div class="promotion">
                     <a href="https://lin.ee/fd8ge5U" target="_blank">
                         <img src="https://www.wildrescue.tw/images/line-official-qr.png" alt="官方帳號 QR Code">
                     </a>
                     <h3>官方帳號</h3>
-                    <p>想與管理團隊保持聯繫？</p>
+                    <p>與管理團隊保持聯繫！</p>
                     <a class="button" href="https://lin.ee/fd8ge5U" target="_blank">立即追蹤</a>
                 </div>
-                <!-- Discord 論壇 -->
                 <div class="promotion">
                     <a href="https://discord.gg/wildrescue" target="_blank">
                         <img src="https://www.wildrescue.tw/images/discord-qr.png" alt="Discord 論壇 QR Code">
                     </a>
                     <h3>Discord 論壇</h3>
-                    <p>熱愛改裝、交易、越野活動或聊各種話題？</p>
+                    <p>聊改裝、交易、越野與更多話題！</p>
                     <a class="button" href="https://discord.gg/wildrescue" target="_blank">立即進入</a>
                 </div>
             </div>
-        </div>
-        <!-- 新增：救援活動會報亮點區塊 -->
-        <div class="card rescue-highlights">
-            <h2>最新救援活動亮點</h2>
-            <p>2025 Q1 我們共處理了 <strong>21 件</strong>救援事件，參與人次超過 <strong>60</strong>！</p>
-            <ul>
-                <li><strong>3/27：</strong>重磅救援記錄：不幸離世的越野學長、眾多英雄隊友的奮勇救援。</li>
-                <li><strong>重複出動：</strong>@Jay、@野營狂阿勳 等成員多次參與，彰顯堅定團隊精神！</li>
-                <li><strong>全台覆蓋：</strong>救援遍及新北、台南、高雄等全台各區，跨越山區、沙灘、溫泉等多樣地形。</li>
-            </ul>
-            <p style="text-align: center;">
-                <a class="button" href="/rescue-stats.html" target="_blank">查看完整救援報告</a>
-            </p>
-        </div>
-        <!-- 社團宗旨區塊 -->
-        <div class="card mission">
-            <h2>🌿 荒野救援社團宗旨 🚙💨</h2>
-            <ul>
-                <li>
-                    <h3>1. 熱愛戶外越野活動</h3>
-                    <p>我們是一個共享越野生活的社團，無論您是新手或經驗豐富的老手，我們都誠摯歡迎您的加入！</p>
-                </li>
-                <li>
-                    <h3>2. 共享資源、相互照應</h3>
-                    <p>我們相信透過共享資源與彼此協助，能應對大部分突發狀況。</p>
-                </li>
-                <li>
-                    <h3>3. 大自然裡沒有地位高低，以車會友</h3>
-                    <p>「車」是我們的共通語言，攜手共享越野的美好過程與經驗。</p>
-                </li>
-                <li>
-                    <h3>4. 尊重與保護自然環境</h3>
-                    <p>我們熱愛荒野，堅持「無痕山林」原則，確保活動不造成環境傷害。</p>
-                </li>
-                <li>
-                    <h3>5. 守護每一位車友</h3>
-                    <p>我們彼此尊重、守護，共同營造安全友善的越野共享環境。</p>
-                </li>
-                <li>
-                    <h3>6. 持以感恩之心</h3>
-                    <p>我們深知每份救援與協助的重要，並以誠摯心意回報這份支持與情誼。</p>
-                </li>
-            </ul>
         </div>
     </div>
     <!-- 頁尾 -->
