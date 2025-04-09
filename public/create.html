@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>建立轉址連結 (新版本)</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    label {
+      display: block;
+      margin: 10px 0 5px;
+      font-weight: bold;
+    }
+    input[type="text"], input[type="url"] {
+      width: 100%;
+      padding: 8px;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button {
+      padding: 10px 20px;
+      background: #2980b9;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: #1f6391;
+    }
+    #result {
+      margin-top: 20px;
+      padding: 10px;
+      background: #eef;
+      border: 1px solid #99f;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>建立轉址連結 (新版本)</h1>
+  <form id="createForm">
+    <label for="target">完整網址：</label>
+    <input type="url" id="target" name="target" required placeholder="請輸入完整網址，例如：https://discord.com/channels/xxxxx">
+
+    <label for="title">標題 (選填)：</label>
+    <input type="text" id="title" name="title" placeholder="請輸入標題">
+
+    <button type="submit">生成轉址連結</button>
+  </form>
+  <div id="result"></div>
+</div>
+<script>
+  const form = document.getElementById("createForm");
+  form.addEventListener("submit", async function(e) {
+    e.preventDefault();
+    const target = document.getElementById("target").value;
+    const title = document.getElementById("title").value;
+
+    try {
+      const response = await fetch("/api/shorten", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ target: target, title: title })
+      });
+      const data = await response.json();
+      if (data.error) {
+        document.getElementById("result").textContent = "錯誤：" + data.error;
+      } else {
+        document.getElementById("result").innerHTML = `<a href="${data.url}" target="_blank">${data.url}</a>`;
+      }
+    } catch (error) {
+      document.getElementById("result").textContent = "呼叫 API 發生錯誤：" + error;
+    }
+  });
+</script>
+</body>
+</html>

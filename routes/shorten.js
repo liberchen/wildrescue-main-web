@@ -6,12 +6,16 @@ const router = express.Router();
 
 console.debug("[DEBUG] Initializing shorten.js module.");
 
-// 建立 PostgreSQL 連線池，使用 Heroku 的環境變數 DATABASE_URL
+// 建立 PostgreSQL 連線池，使用 Heroku 環境變數 DATABASE_URL
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false }
 });
-console.debug("[DEBUG] PostgreSQL pool created with DATABASE_URL.");
+console.debug("[DEBUG] PostgreSQL pool created using DATABASE_URL.");
+
+pool.on('error', (err, client) => {
+    console.error("[DEBUG] Unexpected error on idle PostgreSQL client:", err);
+});
 
 // AES-256-CBC 解密設定
 const algorithm = 'aes-256-cbc';
@@ -23,7 +27,7 @@ const key = crypto.createHash('sha256').update(String(fixedKey)).digest().slice(
 const iv = Buffer.alloc(16, 0);
 console.debug("[DEBUG] AES key and IV generated.");
 
-// 解密函式：輸入為 Base64 編碼後的字串
+// 解密函式 (僅針對加密資料)
 function decrypt(text) {
     try {
         console.debug(`[DEBUG] Decrypting payload: ${text}`);
@@ -53,20 +57,26 @@ function encodeBase62(num) {
     return encoded;
 }
 
-// 共用處理流程：處理加密 payload、資料庫儲存與生成最終短網址
-async function processShortenPayload(encryptedPayload, source_ip) {
-    // 解密 payload
-    const decryptedPayload = decrypt(encryptedPayload);
-    if (!decryptedPayload) {
-        throw new Error("無法解密 target 參數");
-    }
+// 主要處理邏輯：處理傳入的 payload 並產生短網址
+async function processShortenPayload(encryptedInput, source_ip) {
     let payload;
-    try {
-        payload = JSON.parse(decryptedPayload);
-        console.debug(`[DEBUG] Parsed payload: ${JSON.stringify(payload)}`);
-    } catch (err) {
-        console.error("[DEBUG] Payload JSON 解析失敗:", err);
-        throw new Error("解密後資料解析失敗");
+    // 若傳入的 target 為 plain text (以 "http" 開頭)，直接建立 payload 物件
+    if (encryptedInput && encryptedInput.startsWith('http')) {
+        payload = { target: encryptedInput, title: "" };
+        console.debug("[DEBUG] Received plain text payload:", JSON.stringify(payload));
+    } else {
+        // 否則當作加密後資料處理
+        const decryptedPayload = decrypt(encryptedInput);
+        if (!decryptedPayload) {
+            throw new Error("無法解密 target 參數，請確認加密格式與金鑰");
+        }
+        try {
+            payload = JSON.parse(decryptedPayload);
+            console.debug("[DEBUG] Parsed payload from encrypted input:", JSON.stringify(payload));
+        } catch (err) {
+            console.error("[DEBUG] Payload JSON 解析失敗:", err);
+            throw new Error("解密後資料解析失敗，請確認格式");
+        }
     }
     const destinationUrl = payload.target;
     if (!destinationUrl) {
@@ -79,22 +89,22 @@ async function processShortenPayload(encryptedPayload, source_ip) {
         await client.query('BEGIN');
         console.debug("[DEBUG] Transaction started.");
 
-        // 插入資料到 url_list (暫不處理 identity 欄位)
+        // 插入新記錄到 url_list (暫不處理 identity 欄位)
         const insertQuery = `
-              INSERT INTO url_list (source_ip, destination_url, is_active, create_at)
-              VALUES ($1, $2, true, NOW())
-              RETURNING id;
+          INSERT INTO url_list (source_ip, destination_url, is_active, create_at)
+          VALUES ($1, $2, true, NOW())
+          RETURNING id;
         `;
         const insertResult = await client.query(insertQuery, [source_ip, destinationUrl]);
         console.debug(`[DEBUG] Insert executed, result: ${JSON.stringify(insertResult.rows)}`);
         const insertedId = insertResult.rows[0].id;
         console.debug(`[DEBUG] Inserted record id: ${insertedId}`);
 
-        // 初步產生 identity 值 (使用 Base62 編碼自動增量 id)
+        // 使用自動增量 id 透過 Base62 編碼產生 identity 值
         let identityCandidate = encodeBase62(insertedId);
         console.debug(`[DEBUG] Initial identity candidate: ${identityCandidate}`);
 
-        // 更新 identity 欄位，若產生唯一性衝突則重試 (最多 5 次)
+        // 更新 identity 欄位，若唯一性衝突則重試 (最多 5 次)
         let updated = false;
         let attempt = 0;
         while (!updated && attempt < 5) {
@@ -104,7 +114,7 @@ async function processShortenPayload(encryptedPayload, source_ip) {
                 console.debug(`[DEBUG] Successfully updated identity with candidate: ${identityCandidate}`);
                 updated = true;
             } catch (err) {
-                if (err.code === '23505') { // 唯一性衝突
+                if (err.code === '23505') {  // 唯一性衝突
                     console.warn(`[DEBUG] Identity candidate conflict: ${identityCandidate}. Retrying...`);
                     identityCandidate = encodeBase62(insertedId) + Math.floor(Math.random() * 10).toString();
                     attempt++;
@@ -122,7 +132,7 @@ async function processShortenPayload(encryptedPayload, source_ip) {
         console.debug("[DEBUG] Transaction committed successfully.");
         client.release();
 
-        // 組成最終短網址格式: https://www.wildrescue.tw/j?target=(identity)
+        // 組成最終短網址格式 (將 identity 作為 j.js 的 target 參數)
         const finalUrl = `https://www.wildrescue.tw/j?target=${encodeURIComponent(identityCandidate)}`;
         console.debug(`[DEBUG] Final shortened URL: ${finalUrl}`);
         return finalUrl;
@@ -134,23 +144,21 @@ async function processShortenPayload(encryptedPayload, source_ip) {
     }
 }
 
-// POST /api/shorten 路由
+// POST /api/shorten 路由 (支援 POST 與 GET 測試)
 router.post('/', async (req, res) => {
     console.debug(`[DEBUG] Received POST request to /api/shorten with body: ${JSON.stringify(req.body)}`);
     try {
-        const encryptedPayload = req.body.target;
-        if (!encryptedPayload) {
+        const input = req.body.target;
+        if (!input) {
             console.error("[DEBUG] target 欄位缺失");
-            return res.status(400).json({ error: "請在 JSON 中提供 target 欄位（加密後的字串）" });
+            return res.status(400).json({ error: "請在 JSON 中提供 target 欄位" });
         }
-        // 取得來源 IP
         let source_ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'Unknown';
         if (source_ip.includes(',')) {
             source_ip = source_ip.split(',')[0].trim();
         }
         console.debug(`[DEBUG] Detected source IP: ${source_ip}`);
-
-        const finalUrl = await processShortenPayload(encryptedPayload, source_ip);
+        const finalUrl = await processShortenPayload(input, source_ip);
         return res.json({ url: finalUrl });
     } catch (err) {
         console.error("[DEBUG] Server error in POST /api/shorten:", err);
@@ -158,23 +166,21 @@ router.post('/', async (req, res) => {
     }
 });
 
-// 允許 GET 方法供測試使用，從 query string 取得 target
+// GET /api/shorten 路由 (供測試使用)
 router.get('/', async (req, res) => {
     console.debug(`[DEBUG] Received GET request to /api/shorten with query: ${JSON.stringify(req.query)}`);
     try {
-        const encryptedPayload = req.query.target;
-        if (!encryptedPayload) {
+        const input = req.query.target;
+        if (!input) {
             console.error("[DEBUG] GET 請求缺少 target 參數");
-            return res.status(400).json({ error: "請在 query string 中提供 target 參數（加密後的字串）" });
+            return res.status(400).json({ error: "請在 query string 中提供 target 參數" });
         }
-        // 取得來源 IP
         let source_ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'Unknown';
         if (source_ip.includes(',')) {
             source_ip = source_ip.split(',')[0].trim();
         }
         console.debug(`[DEBUG] Detected source IP for GET: ${source_ip}`);
-
-        const finalUrl = await processShortenPayload(encryptedPayload, source_ip);
+        const finalUrl = await processShortenPayload(input, source_ip);
         return res.json({ url: finalUrl });
     } catch (err) {
         console.error("[DEBUG] Server error in GET /api/shorten:", err);

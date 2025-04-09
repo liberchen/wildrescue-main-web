@@ -5,7 +5,7 @@ const bodyParser = require('body-parser');
 // 載入所有路由模組
 const rRoute = require('./routes/r');               // 轉址功能
 const generatorRoute = require('./routes/generator'); // 加密連結產生器
-const jRoute = require('./routes/j');                 // j.js：解密並轉址（含熱門社群 deep link）
+const jRoute = require('./routes/j');                 // j.js：解密轉址（含熱門社群 deep link）
 const shortenRoute = require('./routes/shorten');     // shorten API，用於產生短網址
 
 const app = express();
@@ -17,7 +17,7 @@ console.debug(`[DEBUG] Starting server on port ${PORT}`);
 app.use(bodyParser.json());
 console.debug("[DEBUG] Installed bodyParser.json middleware.");
 
-// 全域 Debug Middleware：記錄每次請求的 HTTP 方法、路徑及來源 IP
+// 全域 debug middleware：記錄每筆請求的 HTTP 方法、URL 與來源 IP
 app.use((req, res, next) => {
     const sourceIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'Unknown';
     console.debug(`[DEBUG] ${req.method} ${req.url} from IP: ${sourceIp}`);
@@ -37,12 +37,12 @@ console.debug("[DEBUG] Mounted route '/j' (jRoute)");
 app.use('/api/shorten', shortenRoute);
 console.debug("[DEBUG] Mounted route '/api/shorten' (shortenRoute)");
 
-// 提供 public 資料夾中的靜態檔案 (例如 index.html、rescue-stats.html 等)
+// 提供 public 資料夾中的靜態檔案 (例如 index.html、rescue-stats.html、create.html 等)
 const publicPath = path.join(__dirname, 'public');
 app.use(express.static(publicPath));
 console.debug(`[DEBUG] Serving static files from: ${publicPath}`);
 
-// 全域錯誤處理 Middleware (方便除錯)
+// 全域錯誤處理 middleware (方便 debug)
 app.use((err, req, res, next) => {
     console.error("[DEBUG] Error encountered:", err);
     res.status(500).json({ error: "Internal Server Error" });
