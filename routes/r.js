@@ -30,6 +30,24 @@ function decrypt(text) {
     }
 }
 
+// 定義熱門社群 app 的設定：
+// 若目標網址包含某些關鍵字，則嘗試生成 deep link，方法為替換 URL 協議部分
+const appConfigs = [
+    {
+        name: 'line',
+        domain: 'line.me',
+        // 將 "https://" 或 "http://" 替換成 "line://"
+        createDeepLink: (url) => url.replace(/^https?:\/\//i, 'line://')
+    },
+    {
+        name: 'discord',
+        domain: 'discord.com',
+        // Discord 深層連結有時使用 "discord://"
+        createDeepLink: (url) => url.replace(/^https?:\/\//i, 'discord://')
+    }
+    // 可依需要新增其他 app 設定
+];
+
 router.get('/', (req, res) => {
     // 取得使用者相關資訊並輸出到 log
     const uaString = req.headers['user-agent'] || 'Unknown';
@@ -98,14 +116,21 @@ router.get('/', (req, res) => {
 
     console.log(`[DEBUG] Decrypted Payload: ${JSON.stringify(payload)}`);
 
-    // 回應頁面只包含基本的跳轉與 OG meta 資訊，不包含 debug 資訊
-    res.send(`<!DOCTYPE html>
+    // 檢查是否為熱門社群 app 並嘗試產生 deep link
+    let deepLink = null;
+    for (const config of appConfigs) {
+        if (targetUrl.toLowerCase().includes(config.domain)) {
+            deepLink = config.createDeepLink(targetUrl);
+            console.log(`[DEBUG] 產生 deep link: ${deepLink} 針對 ${config.name}`);
+            break;
+        }
+    }
+
+    let htmlOutput = `<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
   <title>${customTitle}</title>
-  <!-- 3 秒後自動跳轉 -->
-  <meta http-equiv="refresh" content="3;url=${targetUrl}">
   <!-- Open Graph Meta Tags -->
   <meta property="og:title" content="${customTitle}">
   <meta property="og:description" content="${ogDescription}">
@@ -119,13 +144,38 @@ router.get('/', (req, res) => {
   <style>
     body { font-family: sans-serif; text-align: center; padding: 2rem; }
     p { font-size: 1.2rem; }
-  </style>
+  </style>`;
+
+    // 如果深層連結存在，採用 JavaScript 嘗試打開應用；否則使用 meta refresh
+    if (deepLink) {
+        htmlOutput += `
+  <script>
+    function openDeepLink() {
+      var start = Date.now();
+      window.location = "${deepLink}";
+      setTimeout(function() {
+        var elapsed = Date.now() - start;
+        if (elapsed < 2000) {
+          window.location = "${targetUrl}";
+        }
+      }, 1500);
+    }
+    window.onload = openDeepLink;
+  </script>`;
+    } else {
+        htmlOutput += `
+  <meta http-equiv="refresh" content="3;url=${targetUrl}">`;
+    }
+
+    htmlOutput += `
 </head>
 <body>
   <h1>${customTitle}</h1>
-  <p>即將跳轉到目標頁面，如果沒有自動跳轉，請點<a href="${targetUrl}">這裡</a>。</p>
+  <p>若系統未能自動打開應用程式，請點 <a href="${targetUrl}">這裡</a> 進行手動操作。</p>
 </body>
-</html>`);
+</html>`;
+
+    res.send(htmlOutput);
 });
 
 module.exports = router;
