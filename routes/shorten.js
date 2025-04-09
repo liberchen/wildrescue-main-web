@@ -46,7 +46,7 @@ function decrypt(text) {
 // Base62 編碼字元集
 const base62 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-// 先前的 encodeBase62 函式僅適用於 Number，以下新函式使用 BigInt
+// 使用 BigInt 來產生指定長度的 candidate 字串
 function getCandidate(hashBigInt, len) {
     const modVal = BigInt(62) ** BigInt(len);
     const candidateNum = hashBigInt % modVal;
@@ -61,14 +61,14 @@ function getCandidate(hashBigInt, len) {
             temp = temp / BigInt(62);
         }
     }
-    // 補足不足至指定長度，使用 "0" 補齊
+    // 補足不足至指定長度
     while (candidate.length < len) {
         candidate = "0" + candidate;
     }
     return candidate;
 }
 
-// 利用 recordId、destinationUrl 與 URL_KEY 產生 hash 的 BigInt 值
+// 根據 recordId、destinationUrl 與 URL_KEY 產生 SHA256 hash，並轉換成 BigInt
 function generateHashBigInt(recordId, destinationUrl) {
     const data = recordId.toString() + destinationUrl + process.env.URL_KEY;
     const hashHex = crypto.createHash('sha256').update(data).digest('hex');
@@ -77,7 +77,7 @@ function generateHashBigInt(recordId, destinationUrl) {
     return hashBigInt;
 }
 
-// 主要處理邏輯：處理傳入 payload 並產生最終短網址
+// 主要處理邏輯：根據傳入的資料產生短網址
 async function processShortenPayload(encryptedInput, source_ip) {
     let payload;
     // 判斷是否為 plain text 輸入 (例如以 "http" 開頭)
@@ -98,6 +98,7 @@ async function processShortenPayload(encryptedInput, source_ip) {
         }
     }
     const destinationUrl = payload.target;
+    const title = payload.title || "";
     if (!destinationUrl) {
         throw new Error("目標網址 (target) 為必填項");
     }
@@ -108,24 +109,25 @@ async function processShortenPayload(encryptedInput, source_ip) {
         await client.query('BEGIN');
         console.debug("[DEBUG] Transaction started.");
 
-        // 為避免 identity 為 NULL，INSERT 時直接提供一個臨時值 (例如 'temp')
+        // 產生一個臨時 identity，避免 INSERT 時欄位為 NULL（此處使用 16 字節隨機數轉為十六進位字串）
         const tempIdentity = crypto.randomBytes(16).toString('hex');
         console.debug(`[DEBUG] Generated temporary identity: ${tempIdentity}`);
 
+        // INSERT 新記錄，將 title 一併儲存
         const insertQuery = `
-            INSERT INTO url_list (source_ip, destination_url, identity, is_active, create_at)
-            VALUES ($1, $2, $3, true, NOW())
-            RETURNING id;
+            INSERT INTO url_list (source_ip, destination_url, title, identity, is_active, create_at)
+            VALUES ($1, $2, $3, $4, true, NOW())
+                RETURNING id;
         `;
-        const insertResult = await client.query(insertQuery, [source_ip, destinationUrl, tempIdentity]);
+        const insertResult = await client.query(insertQuery, [source_ip, destinationUrl, title, tempIdentity]);
         console.debug(`[DEBUG] Insert executed, result: ${JSON.stringify(insertResult.rows)}`);
         const insertedId = Number(insertResult.rows[0].id);
         console.debug(`[DEBUG] Inserted record id (as number): ${insertedId}`);
 
-        // 產生 hash BigInt：利用 insertedId、destinationUrl 及 URL_KEY 組合
+        // 產生 hash BigInt 值，作為生成最終 identity 的基礎
         const hashBigInt = generateHashBigInt(insertedId, destinationUrl);
 
-        // 從最短 6 碼開始嘗試到 10 碼
+        // 從最短 6 碼嘗試到 10 碼
         let identityCandidate;
         let updated = false;
         let candidateLength;
@@ -137,7 +139,7 @@ async function processShortenPayload(encryptedInput, source_ip) {
                 await client.query(updateQuery, [identityCandidate, insertedId]);
                 console.debug(`[DEBUG] Successfully updated identity with candidate: ${identityCandidate}`);
                 updated = true;
-                break; // 成功就跳出
+                break; // 成功即跳出
             } catch (err) {
                 if (err.code === '23505') {
                     console.warn(`[DEBUG] Candidate conflict for length ${candidateLength}: ${identityCandidate}`);
@@ -148,7 +150,7 @@ async function processShortenPayload(encryptedInput, source_ip) {
                 }
             }
         }
-        // 若 6 到 10 碼皆發生衝突，則以 10 碼的 candidate 加上隨機後綴重試 (最多 5 次)
+        // 若 6 到 10 碼皆衝突，則以 10 碼的 candidate 加上隨機後綴重試 (最多 5 次)
         let attempt = 0;
         while (!updated && attempt < 5) {
             identityCandidate = getCandidate(hashBigInt, 10) + Math.floor(Math.random() * 10).toString();
