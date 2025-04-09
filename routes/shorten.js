@@ -89,26 +89,30 @@ async function processShortenPayload(encryptedInput, source_ip) {
         await client.query('BEGIN');
         console.debug("[DEBUG] Transaction started.");
 
-        // 插入資料到 url_list (暫不處理 identity)
+        // 產生一個臨時的 identity 值，避免欄位為 null，此值使用 16 字節隨機數
+        const tempIdentity = crypto.randomBytes(16).toString('hex');
+        console.debug(`[DEBUG] Generated temporary identity: ${tempIdentity}`);
+
+        // INSERT 時同時填入 identity 欄位的臨時值
         const insertQuery = `
-            INSERT INTO url_list (source_ip, destination_url, is_active, create_at)
-            VALUES ($1, $2, true, NOW())
-                RETURNING id;
+            INSERT INTO url_list (source_ip, destination_url, identity, is_active, create_at)
+            VALUES ($1, $2, $3, true, NOW())
+            RETURNING id;
         `;
-        const insertResult = await client.query(insertQuery, [source_ip, destinationUrl]);
+        const insertResult = await client.query(insertQuery, [source_ip, destinationUrl, tempIdentity]);
         console.debug(`[DEBUG] Insert executed, result: ${JSON.stringify(insertResult.rows)}`);
         const insertedId = Number(insertResult.rows[0].id);
         console.debug(`[DEBUG] Inserted record id (as number): ${insertedId}`);
 
-        // 使用 Base62 編碼產生 identity 值
+        // 根據自動增量 id 產生最終 identity 值 (使用 Base62 編碼)
         let identityCandidate = encodeBase62(insertedId);
         if (!identityCandidate) {
             identityCandidate = '0';
             console.debug("[DEBUG] Identity candidate was empty, set to '0'");
         }
-        console.debug(`[DEBUG] Initial identity candidate: ${identityCandidate}`);
+        console.debug(`[DEBUG] Final identity candidate before update: ${identityCandidate}`);
 
-        // 嘗試更新 identity 欄位；若衝突則重試最多 5 次
+        // 更新 identity 欄位，若唯一性衝突則重試最多 5 次
         let updated = false;
         let attempt = 0;
         while (!updated && attempt < 5) {
@@ -119,7 +123,7 @@ async function processShortenPayload(encryptedInput, source_ip) {
                 console.debug(`[DEBUG] Successfully updated identity with candidate: ${identityCandidate}`);
                 updated = true;
             } catch (err) {
-                if (err.code === '23505') {
+                if (err.code === '23505') {  // 唯一性衝突
                     console.warn(`[DEBUG] Identity candidate conflict: ${identityCandidate}. Retrying...`);
                     identityCandidate = encodeBase62(insertedId) + Math.floor(Math.random() * 10).toString();
                     console.debug(`[DEBUG] New identity candidate: ${identityCandidate}`);
@@ -138,7 +142,7 @@ async function processShortenPayload(encryptedInput, source_ip) {
         console.debug("[DEBUG] Transaction committed successfully.");
         client.release();
 
-        // 組成最終短網址 (將 identity 當作 j.js 的 target)
+        // 組成最終短網址格式: https://www.wildrescue.tw/j?target=<identity>
         const finalUrl = `https://www.wildrescue.tw/j?target=${encodeURIComponent(identityCandidate)}`;
         console.debug(`[DEBUG] Final shortened URL: ${finalUrl}`);
         return finalUrl;
