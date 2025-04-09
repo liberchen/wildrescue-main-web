@@ -27,7 +27,7 @@ const key = crypto.createHash('sha256').update(String(fixedKey)).digest().slice(
 const iv = Buffer.alloc(16, 0);
 console.debug("[DEBUG] AES key and IV generated.");
 
-// 解密函式：輸入為 Base64 編碼後的字串
+// 解密函式：輸入 Base64 編碼後的字串
 function decrypt(text) {
     try {
         console.debug(`[DEBUG] Decrypting payload: ${text}`);
@@ -48,7 +48,6 @@ const base62 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 function encodeBase62(num) {
     let str = '';
     console.debug(`[DEBUG] Converting number ${num} to Base62`);
-    // 確保 num 為數值型別
     num = Number(num);
     while (num > 0) {
         str = base62[num % 62] + str;
@@ -59,10 +58,10 @@ function encodeBase62(num) {
     return encoded;
 }
 
-// 主要處理邏輯：處理傳入的 payload 並產生短網址
+// 主要處理邏輯：處理傳入 payload 並產生短網址
 async function processShortenPayload(encryptedInput, source_ip) {
     let payload;
-    // 判斷是否為 plain text（以 "http" 開頭），未加密則直接建立 payload
+    // 判斷是否為 plain text 輸入 (例如以 "http" 開頭)
     if (encryptedInput.startsWith("http")) {
         payload = { target: encryptedInput, title: "" };
         console.debug("[DEBUG] Received plain text payload:", JSON.stringify(payload));
@@ -90,7 +89,7 @@ async function processShortenPayload(encryptedInput, source_ip) {
         await client.query('BEGIN');
         console.debug("[DEBUG] Transaction started.");
 
-        // 插入資料，暫不處理 identity 欄位
+        // 插入資料到 url_list (暫不處理 identity)
         const insertQuery = `
             INSERT INTO url_list (source_ip, destination_url, is_active, create_at)
             VALUES ($1, $2, true, NOW())
@@ -98,31 +97,32 @@ async function processShortenPayload(encryptedInput, source_ip) {
         `;
         const insertResult = await client.query(insertQuery, [source_ip, destinationUrl]);
         console.debug(`[DEBUG] Insert executed, result: ${JSON.stringify(insertResult.rows)}`);
-        // 將 id 明確轉為 Number
         const insertedId = Number(insertResult.rows[0].id);
         console.debug(`[DEBUG] Inserted record id (as number): ${insertedId}`);
 
-        // 產生 identity 值 (利用 Base62 編碼 insertedId)
+        // 使用 Base62 編碼產生 identity 值
         let identityCandidate = encodeBase62(insertedId);
-        console.debug(`[DEBUG] Initial identity candidate: ${identityCandidate}`);
         if (!identityCandidate) {
             identityCandidate = '0';
             console.debug("[DEBUG] Identity candidate was empty, set to '0'");
         }
+        console.debug(`[DEBUG] Initial identity candidate: ${identityCandidate}`);
 
-        // 更新 identity 欄位；如唯一性衝突則重試最多 5 次
+        // 嘗試更新 identity 欄位；若衝突則重試最多 5 次
         let updated = false;
         let attempt = 0;
         while (!updated && attempt < 5) {
             try {
+                console.debug(`[DEBUG] Attempt ${attempt + 1}: Updating identity with candidate: ${identityCandidate}`);
                 const updateQuery = `UPDATE url_list SET identity = $1 WHERE id = $2;`;
                 await client.query(updateQuery, [identityCandidate, insertedId]);
                 console.debug(`[DEBUG] Successfully updated identity with candidate: ${identityCandidate}`);
                 updated = true;
             } catch (err) {
-                if (err.code === '23505') { // 唯一性衝突
+                if (err.code === '23505') {
                     console.warn(`[DEBUG] Identity candidate conflict: ${identityCandidate}. Retrying...`);
                     identityCandidate = encodeBase62(insertedId) + Math.floor(Math.random() * 10).toString();
+                    console.debug(`[DEBUG] New identity candidate: ${identityCandidate}`);
                     attempt++;
                 } else {
                     console.error("[DEBUG] Error during identity update:", err);
@@ -138,7 +138,7 @@ async function processShortenPayload(encryptedInput, source_ip) {
         console.debug("[DEBUG] Transaction committed successfully.");
         client.release();
 
-        // 組成最終短網址格式: https://www.wildrescue.tw/j?target=<identity>
+        // 組成最終短網址 (將 identity 當作 j.js 的 target)
         const finalUrl = `https://www.wildrescue.tw/j?target=${encodeURIComponent(identityCandidate)}`;
         console.debug(`[DEBUG] Final shortened URL: ${finalUrl}`);
         return finalUrl;
@@ -150,7 +150,7 @@ async function processShortenPayload(encryptedInput, source_ip) {
     }
 }
 
-// POST 路由 (供正式使用)
+// POST /api/shorten 路由
 router.post('/', async (req, res) => {
     console.debug(`[DEBUG] Received POST request to /api/shorten with body: ${JSON.stringify(req.body)}`);
     try {
@@ -172,7 +172,7 @@ router.post('/', async (req, res) => {
     }
 });
 
-// GET 路由 (供測試使用)
+// GET /api/shorten 路由 (供測試使用)
 router.get('/', async (req, res) => {
     console.debug(`[DEBUG] Received GET request to /api/shorten with query: ${JSON.stringify(req.query)}`);
     try {
