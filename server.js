@@ -2,12 +2,11 @@ const express = require('express');
 const path = require('path');
 const bodyParser = require('body-parser');
 
-// 原有的路由
-const rRoute = require('./routes/r');           // 轉址功能
+// 原有與新增的路由
+const rRoute = require('./routes/r');               // 轉址功能
 const generatorRoute = require('./routes/generator'); // 加密連結產生器
-
-// 新增 j.js 路由 (負責解密並轉址，並處理熱門社群 deep link 備援)
-const jRoute = require('./routes/j');
+const jRoute = require('./routes/j');                 // 新增 j.js：解密並轉址（含熱門社群 deep link）
+const shortenRoute = require('./routes/shorten');     // 新增 shorten API，用於產生短網址
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -21,10 +20,11 @@ app.use((req, res, next) => {
     next();
 });
 
-// 掛載路由
+// 掛載各 API 路由
 app.use('/r', rRoute);
 app.use('/api/generate', generatorRoute);
-app.use('/j', jRoute);  // 新增的 j.js 路由
+app.use('/j', jRoute);
+app.use('/api/shorten', shortenRoute);  // 新增 shorten API 路由
 
 // 提供 public 資料夾中的靜態檔案
 app.use(express.static(path.join(__dirname, 'public')));
