@@ -43,22 +43,41 @@ function decrypt(text) {
     }
 }
 
-// Base62 編碼函式
+// Base62 編碼字元集
 const base62 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-function encodeBase62(num) {
-    let str = '';
-    console.debug(`[DEBUG] Converting number ${num} to Base62`);
-    num = Number(num);
-    while (num > 0) {
-        str = base62[num % 62] + str;
-        num = Math.floor(num / 62);
+
+// 先前的 encodeBase62 函式僅適用於 Number，以下新函式使用 BigInt
+function getCandidate(hashBigInt, len) {
+    const modVal = BigInt(62) ** BigInt(len);
+    const candidateNum = hashBigInt % modVal;
+    let candidate = "";
+    let temp = candidateNum;
+    if (temp === BigInt(0)) {
+        candidate = "0";
+    } else {
+        while (temp > 0) {
+            const remainder = temp % BigInt(62);
+            candidate = base62[Number(remainder)] + candidate;
+            temp = temp / BigInt(62);
+        }
     }
-    const encoded = str || '0';
-    console.debug(`[DEBUG] Base62 encoded result: ${encoded}`);
-    return encoded;
+    // 補足不足至指定長度，使用 "0" 補齊
+    while (candidate.length < len) {
+        candidate = "0" + candidate;
+    }
+    return candidate;
 }
 
-// 主要處理邏輯：處理傳入 payload 並產生短網址
+// 利用 recordId、destinationUrl 與 URL_KEY 產生 hash 的 BigInt 值
+function generateHashBigInt(recordId, destinationUrl) {
+    const data = recordId.toString() + destinationUrl + process.env.URL_KEY;
+    const hashHex = crypto.createHash('sha256').update(data).digest('hex');
+    const hashBigInt = BigInt("0x" + hashHex);
+    console.debug(`[DEBUG] Generated hash BigInt: ${hashBigInt}`);
+    return hashBigInt;
+}
+
+// 主要處理邏輯：處理傳入 payload 並產生最終短網址
 async function processShortenPayload(encryptedInput, source_ip) {
     let payload;
     // 判斷是否為 plain text 輸入 (例如以 "http" 開頭)
@@ -89,11 +108,10 @@ async function processShortenPayload(encryptedInput, source_ip) {
         await client.query('BEGIN');
         console.debug("[DEBUG] Transaction started.");
 
-        // 產生一個臨時的 identity 值，避免欄位為 null，此值使用 16 字節隨機數
+        // 為避免 identity 為 NULL，INSERT 時直接提供一個臨時值 (例如 'temp')
         const tempIdentity = crypto.randomBytes(16).toString('hex');
         console.debug(`[DEBUG] Generated temporary identity: ${tempIdentity}`);
 
-        // INSERT 時同時填入 identity 欄位的臨時值
         const insertQuery = `
             INSERT INTO url_list (source_ip, destination_url, identity, is_active, create_at)
             VALUES ($1, $2, $3, true, NOW())
@@ -104,45 +122,61 @@ async function processShortenPayload(encryptedInput, source_ip) {
         const insertedId = Number(insertResult.rows[0].id);
         console.debug(`[DEBUG] Inserted record id (as number): ${insertedId}`);
 
-        // 根據自動增量 id 產生最終 identity 值 (使用 Base62 編碼)
-        let identityCandidate = encodeBase62(insertedId);
-        if (!identityCandidate) {
-            identityCandidate = '0';
-            console.debug("[DEBUG] Identity candidate was empty, set to '0'");
-        }
-        console.debug(`[DEBUG] Final identity candidate before update: ${identityCandidate}`);
+        // 產生 hash BigInt：利用 insertedId、destinationUrl 及 URL_KEY 組合
+        const hashBigInt = generateHashBigInt(insertedId, destinationUrl);
 
-        // 更新 identity 欄位，若唯一性衝突則重試最多 5 次
+        // 從最短 6 碼開始嘗試到 10 碼
+        let identityCandidate;
         let updated = false;
-        let attempt = 0;
-        while (!updated && attempt < 5) {
+        let candidateLength;
+        for (candidateLength = 6; candidateLength <= 10; candidateLength++) {
+            identityCandidate = getCandidate(hashBigInt, candidateLength);
+            console.debug(`[DEBUG] Trying identity candidate (length ${candidateLength}): ${identityCandidate}`);
             try {
-                console.debug(`[DEBUG] Attempt ${attempt + 1}: Updating identity with candidate: ${identityCandidate}`);
                 const updateQuery = `UPDATE url_list SET identity = $1 WHERE id = $2;`;
                 await client.query(updateQuery, [identityCandidate, insertedId]);
                 console.debug(`[DEBUG] Successfully updated identity with candidate: ${identityCandidate}`);
                 updated = true;
+                break; // 成功就跳出
             } catch (err) {
-                if (err.code === '23505') {  // 唯一性衝突
-                    console.warn(`[DEBUG] Identity candidate conflict: ${identityCandidate}. Retrying...`);
-                    identityCandidate = encodeBase62(insertedId) + Math.floor(Math.random() * 10).toString();
-                    console.debug(`[DEBUG] New identity candidate: ${identityCandidate}`);
-                    attempt++;
+                if (err.code === '23505') {
+                    console.warn(`[DEBUG] Candidate conflict for length ${candidateLength}: ${identityCandidate}`);
+                    // 繼續嘗試較長的 candidate
                 } else {
                     console.error("[DEBUG] Error during identity update:", err);
                     throw err;
                 }
             }
         }
+        // 若 6 到 10 碼皆發生衝突，則以 10 碼的 candidate 加上隨機後綴重試 (最多 5 次)
+        let attempt = 0;
+        while (!updated && attempt < 5) {
+            identityCandidate = getCandidate(hashBigInt, 10) + Math.floor(Math.random() * 10).toString();
+            console.debug(`[DEBUG] Fallback candidate attempt ${attempt + 1}: ${identityCandidate}`);
+            try {
+                const updateQuery = `UPDATE url_list SET identity = $1 WHERE id = $2;`;
+                await client.query(updateQuery, [identityCandidate, insertedId]);
+                console.debug(`[DEBUG] Successfully updated identity with fallback candidate: ${identityCandidate}`);
+                updated = true;
+                break;
+            } catch (err) {
+                if (err.code === '23505') {
+                    console.warn(`[DEBUG] Fallback candidate conflict: ${identityCandidate}. Retrying...`);
+                    attempt++;
+                } else {
+                    console.error("[DEBUG] Error during fallback identity update:", err);
+                    throw err;
+                }
+            }
+        }
         if (!updated) {
-            console.error("[DEBUG] Failed to generate a unique identity after 5 attempts.");
+            console.error("[DEBUG] Failed to generate a unique identity after attempts.");
             throw new Error("無法生成唯一識別碼");
         }
         await client.query('COMMIT');
         console.debug("[DEBUG] Transaction committed successfully.");
         client.release();
 
-        // 組成最終短網址格式: https://www.wildrescue.tw/j?target=<identity>
         const finalUrl = `https://www.wildrescue.tw/j?target=${encodeURIComponent(identityCandidate)}`;
         console.debug(`[DEBUG] Final shortened URL: ${finalUrl}`);
         return finalUrl;
