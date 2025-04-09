@@ -1,118 +1,122 @@
 const express = require('express');
-const crypto = require('crypto');
+const { Pool } = require('pg');
 const useragent = require('express-useragent');
 const geoip = require('geoip-lite');
+
 const router = express.Router();
 
-// AES-256-CBC 加密/解密設定
-const algorithm = 'aes-256-cbc';
-const fixedKey = process.env.URL_KEY;
-if (!fixedKey) {
-    throw new Error("環境變數 URL_KEY 未設置");
-}
-const key = crypto.createHash('sha256').update(String(fixedKey)).digest().slice(0, 32);
-// 固定 IV (示範用途，不建議在生產環境使用固定 IV)
-const iv = Buffer.alloc(16, 0);
+// 建立 PostgreSQL 連線池 (使用 Heroku 的 DATABASE_URL 與 ssl 設定)
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
+});
+console.debug("[DEBUG] PostgreSQL pool for j.js created using DATABASE_URL.");
 
-// 解密函式：輸入 Base64 編碼後的字串，返回解密後的明文
-function decrypt(text) {
-    try {
-        const encryptedText = Buffer.from(text, 'base64');
-        const decipher = crypto.createDecipheriv(algorithm, key, iv);
-        let decrypted = decipher.update(encryptedText, undefined, 'utf8');
-        decrypted += decipher.final('utf8');
-        return decrypted;
-    } catch (err) {
-        console.error('Decryption error:', err);
-        return null;
-    }
-}
+pool.on('error', (err, client) => {
+    console.error("[DEBUG] Unexpected error on idle PostgreSQL client in j.js:", err);
+});
 
-// 定義熱門社群應用設定：若目標網址包含關鍵字則產生深層連結 deep link
+// 定義熱門社群 app 的設定
 const appConfigs = [
     {
         name: 'line',
         domain: 'line.me',
+        // 將 "https://" 或 "http://" 替換成 "line://"
         createDeepLink: (url) => url.replace(/^https?:\/\//i, 'line://')
     },
     {
         name: 'discord',
         domain: 'discord.com',
+        // 將 "https://" 或 "http://" 替換成 "discord://"
         createDeepLink: (url) => url.replace(/^https?:\/\//i, 'discord://')
     }
-    // 可依需求擴充其他應用設定
+    // 可依需要新增其他 app 設定
 ];
 
-router.get('/', (req, res) => {
-    // 取得使用者資訊（User-Agent、來源IP、Referrer 等）並記錄至 log
+router.get('/', async (req, res) => {
+    // 取得查詢參數 target (這裡 target 為識別碼 identity)
+    const identity = req.query.target;
+    if (!identity) {
+        return res.status(400).send("請提供 target 參數");
+    }
+
+    // 取得使用者相關資訊並記錄
     const uaString = req.headers['user-agent'] || 'Unknown';
     const ua = useragent.parse(uaString);
     const referrer = req.headers.referer || 'Direct/Unknown';
 
-    let platform = "Unknown";
-    if (referrer.toLowerCase().includes("line.me")) {
-        platform = "Line";
-    } else if (referrer.toLowerCase().includes("facebook.com")) {
-        platform = "Facebook";
-    } else if (referrer.toLowerCase().includes("discord")) {
-        platform = "Discord";
-    } else if (referrer.toLowerCase().includes("twitter.com")) {
-        platform = "Twitter";
+    let sourceIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'Unknown';
+    if (sourceIp.includes(',')) {
+        sourceIp = sourceIp.split(',')[0].trim();
     }
-
-    let ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'Unknown';
-    if (ip.includes(',')) {
-        ip = ip.split(',')[0].trim();
-    }
-    const geo = geoip.lookup(ip) || {};
+    const geo = geoip.lookup(sourceIp) || {};
     const country = geo.country || "Unknown";
 
-    console.log(`[DEBUG] Request from IP: ${ip} (${country})`);
-    console.log(`[DEBUG] User-Agent: ${uaString}`);
-    console.log(`[DEBUG] Parsed UA: ${JSON.stringify(ua)}`);
-    console.log(`[DEBUG] Referrer: ${referrer}`);
-    console.log(`[DEBUG] Inferred Platform: ${platform}`);
+    console.debug(`[DEBUG] /j invoked. Target identity: ${identity}`);
+    console.debug(`[DEBUG] Request from IP: ${sourceIp} (${country})`);
+    console.debug(`[DEBUG] User-Agent: ${uaString}`);
+    console.debug(`[DEBUG] Referrer: ${referrer}`);
 
-    // 取得加密參數 "target" (加密後的 JSON 字串)
-    const encryptedPayload = req.query.target;
-    if (!encryptedPayload) {
-        return res.send('請提供 target 參數（經加密且 Base64 編碼），例如：?target=ENCRYPTED_PAYLOAD');
-    }
-
-    const decryptedPayload = decrypt(encryptedPayload);
-    if (!decryptedPayload) {
-        return res.send('無法解密 target 參數，請確認加密格式與金鑰正確。');
-    }
-
-    let payload;
     try {
-        payload = JSON.parse(decryptedPayload);
-    } catch (err) {
-        return res.send('解密後的內容無法解析，請確認格式正確。');
-    }
-
-    const targetUrl = payload.target;
-    const customTitle = payload.title || "全台灣最大荒野救援";
-    const ogDescription = "立即加入我們，獲得即時救援與豐富社群互動！";
-    const ogImage = "https://www.wildrescue.tw/images/og-preview.png";
-
-    console.log(`[DEBUG] Decrypted Payload: ${JSON.stringify(payload)}`);
-
-    // 檢查是否為熱門社群應用，嘗試產生 deep link
-    let deepLink = null;
-    for (const config of appConfigs) {
-        if (targetUrl.toLowerCase().includes(config.domain)) {
-            deepLink = config.createDeepLink(targetUrl);
-            console.log(`[DEBUG] 產生 deep link: ${deepLink} 針對 ${config.name}`);
-            break;
+        // 查詢資料庫，根據 identity 取得 destination_url 與 title (若有)
+        const queryText = `
+            SELECT destination_url, title
+            FROM url_list
+            WHERE identity = $1 AND is_active = true
+                LIMIT 1;
+        `;
+        const result = await pool.query(queryText, [identity]);
+        if (result.rowCount === 0) {
+            console.error("[DEBUG] 未找到對應的轉址記錄，identity:", identity);
+            return res.status(404).send("未找到對應的轉址記錄");
         }
-    }
+        const destinationUrl = result.rows[0].destination_url;
+        const recordTitle = result.rows[0].title;
+        console.debug(`[DEBUG] Found destination_url: ${destinationUrl}`);
 
-    let htmlOutput = `<!DOCTYPE html>
+        // 使用資料庫中的 title 作為預覽標題，若無則使用預設
+        const customTitle = recordTitle && recordTitle.trim().length > 0 ? recordTitle : "荒野救援 - 轉址中";
+
+        // 檢查是否為熱門社群 app 並嘗試產生 deep link
+        let deepLink = null;
+        for (const config of appConfigs) {
+            if (destinationUrl.toLowerCase().includes(config.domain)) {
+                deepLink = config.createDeepLink(destinationUrl);
+                console.debug(`[DEBUG] 產生 deep link: ${deepLink} 針對 ${config.name}`);
+                break;
+            }
+        }
+
+        // 組成 HTML 頁面，用 meta refresh 與 JavaScript 轉址
+        const ogDescription = "正在轉向目的地，請稍後...";
+        const ogImage = "https://www.wildrescue.tw/images/og-preview.png";
+
+        let script = "";
+        if (deepLink) {
+            script = `
+  <script>
+    function openDeepLink() {
+      var startTime = Date.now();
+      window.location = "${deepLink}";
+      setTimeout(function(){
+          var elapsed = Date.now() - startTime;
+          if(elapsed < 2000) {
+              window.location = "${destinationUrl}";
+          }
+      }, 1500);
+    }
+    window.onload = openDeepLink;
+  </script>`;
+        } else {
+            script = `<meta http-equiv="refresh" content="3;url=${destinationUrl}">`;
+        }
+
+        const htmlOutput = `<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
   <title>${customTitle}</title>
+  ${script}
   <!-- Open Graph Meta Tags -->
   <meta property="og:title" content="${customTitle}">
   <meta property="og:description" content="${ogDescription}">
@@ -126,41 +130,22 @@ router.get('/', (req, res) => {
   <style>
     body { font-family: sans-serif; text-align: center; padding: 2rem; }
     p { font-size: 1.2rem; }
-  </style>`;
-
-    // 若深層連結存在，嘗試用 JavaScript deep link 及備援機制
-    if (deepLink) {
-        htmlOutput += `
-  <script>
-    // 嘗試打開深層連結
-    function openDeepLink() {
-      var startTime = Date.now();
-      window.location = "${deepLink}";
-      setTimeout(function() {
-        var elapsed = Date.now() - startTime;
-        // 若 elapsed < 2000 毫秒，認定未啟動 app，則轉向網頁版
-        if (elapsed < 2000) {
-          window.location = "${targetUrl}";
-        }
-      }, 1500);
-    }
-    window.onload = openDeepLink;
-  </script>`;
-    } else {
-        // 若不屬於熱門社群，則用 meta refresh 直接跳轉
-        htmlOutput += `
-  <meta http-equiv="refresh" content="3;url=${targetUrl}">`;
-    }
-
-    htmlOutput += `
+  </style>
 </head>
 <body>
   <h1>${customTitle}</h1>
-  <p>若系統未能自動打開應用程式，請點 <a href="${targetUrl}">這裡</a> 進行手動操作。</p>
+  <p>正在轉向目的地，如果未自動跳轉，請點 <a href="${destinationUrl}">這裡</a> 進行手動操作。</p>
+  <div id="backup" style="display:none; margin-top:20px;">
+    <p>請點擊以下連結手動轉向：</p>
+    <p><a href="${destinationUrl}" target="_blank">${destinationUrl}</a></p>
+  </div>
 </body>
 </html>`;
-
-    res.send(htmlOutput);
+        res.send(htmlOutput);
+    } catch (err) {
+        console.error("[DEBUG] Error in /j route:", err);
+        res.status(500).send("伺服器錯誤");
+    }
 });
 
 module.exports = router;
