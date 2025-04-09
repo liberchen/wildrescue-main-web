@@ -88,7 +88,7 @@ router.get('/', async (req, res) => {
         }
 
         // 組成 HTML 頁面，用 meta refresh 與 JavaScript 轉址
-        const ogDescription = "正在轉向目的地，請稍後...";
+        const ogDescription = "荒野救援";
         const ogImage = "https://www.wildrescue.tw/images/og-preview.png";
 
         let script = "";
