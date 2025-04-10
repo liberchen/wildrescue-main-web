@@ -21,26 +21,26 @@ const appConfigs = [
     {
         name: 'line',
         domain: 'line.me',
-        // 將 "https://" 或 "http://" 替換成 "line://"
+        // iOS 下將 "https://" 或 "http://" 替換成 "line://"
         createDeepLink: (url) => url.replace(/^https?:\/\//i, 'line://')
     },
     {
         name: 'discord',
         domain: 'discord.com',
-        // 將 "https://" 或 "http://" 替換成 "discord://"
+        // iOS 下將 "https://" 或 "http://" 替換成 "discord://"
         createDeepLink: (url) => url.replace(/^https?:\/\//i, 'discord://')
     }
-    // 可依需要新增其他 app 設定
+    // 其他應用設定可依需要新增
 ];
 
 router.get('/', async (req, res) => {
-    // 取得查詢參數 target (這裡 target 為識別碼 identity)
+    // 取得查詢參數 target (這裡 target 為資料表中的識別碼 identity)
     const identity = req.query.target;
     if (!identity) {
         return res.status(400).send("請提供 target 參數");
     }
 
-    // 取得使用者相關資訊並記錄
+    // 取得使用者相關資訊
     const uaString = req.headers['user-agent'] || 'Unknown';
     const ua = useragent.parse(uaString);
     const referrer = req.headers.referer || 'Direct/Unknown';
@@ -58,7 +58,7 @@ router.get('/', async (req, res) => {
     console.debug(`[DEBUG] Referrer: ${referrer}`);
 
     try {
-        // 查詢資料庫，根據 identity 取得 destination_url 與 title (若有)
+        // 從資料庫查詢 destination_url 與 title
         const queryText = `
             SELECT destination_url, title
             FROM url_list
@@ -74,21 +74,35 @@ router.get('/', async (req, res) => {
         const recordTitle = result.rows[0].title;
         console.debug(`[DEBUG] Found destination_url: ${destinationUrl}`);
 
-        // 使用資料庫中的 title 作為預覽標題，若無則使用預設
-        const customTitle = recordTitle && recordTitle.trim().length > 0 ? recordTitle : "荒野救援 - 轉址中";
+        // 使用資料庫中讀取到的 title，若為空則預設
+        const customTitle = (recordTitle && recordTitle.trim().length > 0) ? recordTitle : "荒野救援 - 轉址中";
 
-        // 檢查是否為熱門社群 app 並嘗試產生 deep link
+        // 判斷是否符合熱門社群 app，並產生 deep link
         let deepLink = null;
         for (const config of appConfigs) {
             if (destinationUrl.toLowerCase().includes(config.domain)) {
-                deepLink = config.createDeepLink(destinationUrl);
-                console.debug(`[DEBUG] 產生 deep link: ${deepLink} 針對 ${config.name}`);
+                // 若使用者為 Android 裝置，生成 Android Intent 格式 deep link
+                if (uaString.toLowerCase().includes("android")) {
+                    if (config.name === 'discord') {
+                        // Discord Android deep link，指定 package 為 com.discord
+                        deepLink = `intent://${destinationUrl.replace(/^https?:\/\//i, "")}#Intent;scheme=discord;package=com.discord;end`;
+                    } else if (config.name === 'line') {
+                        // LINE Android deep link，指定 package 為 jp.naver.line
+                        deepLink = `intent://${destinationUrl.replace(/^https?:\/\//i, "")}#Intent;scheme=line;package=jp.naver.line;end`;
+                    } else {
+                        deepLink = config.createDeepLink(destinationUrl);
+                    }
+                } else {
+                    // 非 Android：採用原本的 deep link 生成方式
+                    deepLink = config.createDeepLink(destinationUrl);
+                }
+                console.debug(`[DEBUG] Generated deep link: ${deepLink} for ${config.name}`);
                 break;
             }
         }
 
-        // 組成 HTML 頁面，用 meta refresh 與 JavaScript 轉址
-        const ogDescription = "荒野救援";
+        // 組成 HTML 頁面，提供轉址與備援連結
+        const ogDescription = "正在轉向目的地，請稍後...";
         const ogImage = "https://www.wildrescue.tw/images/og-preview.png";
 
         let script = "";
@@ -148,4 +162,4 @@ router.get('/', async (req, res) => {
     }
 });
 
-module.exports = router;
+module.exports = router
